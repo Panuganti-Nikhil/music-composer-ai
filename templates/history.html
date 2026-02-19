@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="View your previously generated music tracks. Replay, download, or generate new ones.">
+    <title>Track History | CoverComposer</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📜</text></svg>">
+</head>
+
+<body>
+    <!-- Floating Particles -->
+    <div class="particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <div class="container">
+        <!-- Navigation -->
+        <nav class="nav-bar">
+            <a href="/" class="nav-link" id="navHome">🎵 Generate</a>
+            <a href="/train" class="nav-link" id="navTrain">🧠 Train Model</a>
+            <a href="/history" class="nav-link active" id="navHistory">📜 History</a>
+        </nav>
+
+        <!-- Header -->
+        <header class="header">
+            <div class="logo-icon">📜</div>
+            <h1>Track History</h1>
+            <p class="subtitle">Your previously generated <span>compositions</span></p>
+        </header>
+
+        {% if tracks %}
+        <!-- Track List -->
+        <div class="card animate-in">
+            <h2 class="section-title">
+                <span class="icon">🎶</span>
+                Recent Tracks ({{ tracks|length }})
+            </h2>
+
+            <div class="history-list">
+                {% for track in tracks %}
+                <div class="history-item">
+                    <div class="history-info">
+                        <div class="history-meta">
+                            <span class="history-mood">{{ track.mood }}</span>
+                            <span class="history-sep">·</span>
+                            <span class="history-genre">{{ track.genre }}</span>
+                            <span class="history-sep">·</span>
+                            <span class="history-tempo">{{ track.tempo }} BPM</span>
+                            <span class="history-sep">·</span>
+                            <span class="history-style">{{ track.style }}</span>
+                        </div>
+                        <div class="history-details">
+                            <span class="tempo-hint">{{ track.created }} · {{ track.size_kb }} KB</span>
+                        </div>
+                    </div>
+                    <div class="history-player">
+                        <audio controls preload="none" style="height: 36px; width: 100%;">
+                            <source src="/static/output/{{ track.filename }}" type="audio/wav">
+                        </audio>
+                    </div>
+                    <div class="history-actions">
+                        <a href="/download/{{ track.filename }}" class="btn-mini btn-mini-download"
+                            title="Download WAV">
+                            ⬇️ WAV
+                        </a>
+                        {% if track.has_midi %}
+                        <a href="/download/{{ track.midi_filename }}" class="btn-mini btn-mini-midi"
+                            title="Download MIDI">
+                            🎹 MIDI
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="history-footer"
+                style="margin-top: 30px; text-align: center; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                <button id="clearHistoryBtn" class="btn-mini"
+                    style="background: rgba(255, 71, 87, 0.1); color: #ff4757; border: 1px solid rgba(255, 71, 87, 0.2); cursor: pointer; padding: 10px 20px; border-radius: 8px;">
+                    🗑️ Clear All History
+                </button>
+            </div>
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="card animate-in" style="text-align: center; padding: 60px 40px;">
+            <div style="font-size: 4rem; margin-bottom: 20px;">🎵</div>
+            <h2 style="color: var(--text-primary); margin-bottom: 12px;">No Tracks Yet</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 30px;">
+                Generate your first track to see it here!
+            </p>
+            <a href="/" class="btn-generate" style="display: inline-flex; width: auto; padding: 14px 32px;">
+                <span class="btn-icon">🎵</span>
+                Generate Track
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- Footer -->
+        <footer class="footer animate-in-delay-2">
+            <p>🎵 CoverComposer — Generative AI Music · Built with FastAPI & Markov Chains</p>
+        </footer>
+    </div>
+
+    <script>
+        document.getElementById('clearHistoryBtn')?.addEventListener('click', async function () {
+            if (confirm('Are you sure you want to delete all generated tracks? This cannot be undone.')) {
+                try {
+                    this.innerHTML = '⌛ Clearing...';
+                    this.disabled = true;
+
+                    const response = await fetch('/api/clear_history', {
+                        method: 'POST'
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        window.location.reload();
+                    } else {
+                        alert('Error clearing history: ' + result.message);
+                        this.innerHTML = '🗑️ Clear All History';
+                        this.disabled = false;
+                    }
+                } catch (error) {
+                    alert('Request failed: ' + error);
+                    this.innerHTML = '🗑️ Clear All History';
+                    this.disabled = false;
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

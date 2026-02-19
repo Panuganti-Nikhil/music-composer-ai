@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Train your own AI music model by uploading MIDI files. The Markov Chain learns note patterns from real music.">
+    <title>Train Model | CoverComposer</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
+</head>
+
+<body>
+    <!-- Floating Particles -->
+    <div class="particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <div class="container">
+        <!-- Navigation -->
+        <nav class="nav-bar">
+            <a href="/" class="nav-link" id="navHome">🎵 Generate</a>
+            <a href="/train" class="nav-link active" id="navTrain">🧠 Train Model</a>
+            <a href="/history" class="nav-link" id="navHistory">📜 History</a>
+        </nav>
+
+        <!-- Header -->
+        <header class="header">
+            <div class="logo-icon">🧠</div>
+            <h1>Train Your Model</h1>
+            <p class="subtitle">Upload MIDI files to teach the AI <span>real musical patterns</span></p>
+        </header>
+
+        <!-- Success/Error Messages -->
+        {% if success %}
+        <div class="card animate-in" style="border-color: rgba(16, 185, 129, 0.4); margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="success-icon" style="width: 48px; height: 48px; font-size: 22px;">✓</div>
+                <div>
+                    <h3 style="color: var(--accent-green); margin-bottom: 4px;">Training Complete!</h3>
+                    <p style="color: var(--text-secondary);">{{ success }}</p>
+                </div>
+            </div>
+            {% if trained_files %}
+            <div
+                style="margin-top: 16px; padding: 12px; background: rgba(16, 185, 129, 0.08); border-radius: var(--radius-sm);">
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 8px;">Files processed:</p>
+                {% for f in trained_files %}
+                <span class="scale-badge" style="margin: 2px;">📄 {{ f }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if error %}
+        <div class="card animate-in" style="border-color: rgba(239, 68, 68, 0.4); margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div
+                    style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #ef4444, #dc2626); display: flex; align-items: center; justify-content: center; font-size: 22px;">
+                    ✗</div>
+                <div>
+                    <h3 style="color: #ef4444;">Upload Error</h3>
+                    <p style="color: var(--text-secondary);">{{ error }}</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- How Training Works -->
+        <div class="card animate-in" style="margin-bottom: 30px;">
+            <h2 class="section-title">
+                <span class="icon">📖</span>
+                How Training Works
+            </h2>
+            <div class="training-steps">
+                <div class="training-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>Upload MIDI Files</h4>
+                        <p>Provide .mid or .midi files from any source — classical pieces, pop songs, jazz standards,
+                            etc.</p>
+                    </div>
+                </div>
+                <div class="training-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>Extract Note Sequences</h4>
+                        <p>The system reads all note-on events from every track in each MIDI file.</p>
+                    </div>
+                </div>
+                <div class="training-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>Build Transition Matrix</h4>
+                        <p>A Markov Chain counts how often each note follows every other note, building probabilities.
+                        </p>
+                    </div>
+                </div>
+                <div class="training-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h4>Save & Use</h4>
+                        <p>The trained model is saved as JSON. Select it on the Generate page to create music with
+                            learned patterns!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Form -->
+        <div class="card animate-in-delay">
+            <h2 class="section-title">
+                <span class="icon">📤</span>
+                Upload Training Data
+            </h2>
+
+            <form method="POST" action="/train" enctype="multipart/form-data" id="trainForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="model_name">
+                            <span class="emoji">📝</span> Model Name
+                        </label>
+                        <input type="text" name="model_name" id="model_name"
+                            placeholder="e.g., classical_piano, jazz_vibes" required
+                            style="font-family: 'Inter', sans-serif; font-size: 1rem; font-weight: 500; color: var(--text-primary); background: rgba(10, 10, 30, 0.6); border: 1.5px solid var(--border-color); border-radius: var(--radius-md); padding: 14px 18px; outline: none; transition: var(--transition-fast); width: 100%;">
+                        <span class="tempo-hint">Give your model a descriptive name (no spaces, use underscores)</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="midi_files">
+                            <span class="emoji">📁</span> MIDI Files
+                        </label>
+                        <div class="file-upload-area" id="fileUploadArea">
+                            <input type="file" name="midi_files" id="midi_files" accept=".mid,.midi" multiple required
+                                style="display: none;">
+                            <div class="file-upload-content" id="fileUploadContent">
+                                <span style="font-size: 2rem;">📂</span>
+                                <p>Click to select or drag MIDI files here</p>
+                                <span class="tempo-hint">Accepts .mid and .midi files</span>
+                            </div>
+                        </div>
+                        <div id="fileList" style="margin-top: 8px;"></div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-generate" id="trainBtn" style="margin-top: 10px;">
+                    <span class="btn-icon">🧠</span>
+                    Train Model
+                </button>
+            </form>
+        </div>
+
+        <!-- Existing Models -->
+        {% if models %}
+        <div class="card animate-in-delay-2" style="margin-top: 30px;">
+            <h2 class="section-title">
+                <span class="icon">📦</span>
+                Trained Models
+            </h2>
+            <div class="track-details">
+                {% for model in models %}
+                <div class="detail-item">
+                    <div class="detail-icon">🧠</div>
+                    <div class="detail-info">
+                        <span class="detail-label">{{ model.name }}</span>
+                        <span class="detail-value">{{ model.trained_on }} files · {{ model.total_notes }} notes · {{
+                            model.unique_notes }} unique</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <p style="color: var(--text-muted); margin-top: 16px; font-size: 0.85rem;">
+                💡 These models are available on the <a href="/" style="color: var(--accent-primary);">Generate page</a>
+                under "AI Model"
+            </p>
+        </div>
+        {% endif %}
+
+        <!-- Footer -->
+        <footer class="footer animate-in-delay-2">
+            <p>🎵 CoverComposer — Generative AI Music · Built with FastAPI & Markov Chains</p>
+        </footer>
+    </div>
+
+    <script>
+        // File upload area interaction
+        const uploadArea = document.getElementById('fileUploadArea');
+        const fileInput = document.getElementById('midi_files');
+        const fileList = document.getElementById('fileList');
+        const uploadContent = document.getElementById('fileUploadContent');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'var(--accent-primary)';
+            uploadArea.style.background = 'rgba(139, 92, 246, 0.1)';
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = '';
+            uploadArea.style.background = '';
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '';
+            uploadArea.style.background = '';
+            fileInput.files = e.dataTransfer.files;
+            updateFileList();
+        });
+
+        fileInput.addEventListener('change', updateFileList);
+
+        function updateFileList() {
+            const files = fileInput.files;
+            if (files.length > 0) {
+                let html = '';
+                for (let f of files) {
+                    const sizeKB = (f.size / 1024).toFixed(1);
+                    html += `<span class="scale-badge" style="margin: 2px;">🎵 ${f.name} (${sizeKB} KB)</span> `;
+                }
+                fileList.innerHTML = html;
+                uploadContent.innerHTML = `
+                    <span style="font-size: 2rem;">✅</span>
+                    <p><strong>${files.length}</strong> file(s) selected</p>
+                `;
+            }
+        }
+    </script>
+</body>
+
+</html>

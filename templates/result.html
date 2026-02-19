@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Your AI-generated music track is ready! Listen, download, or generate a new track with CoverComposer.">
+    <title>Track Generated | CoverComposer</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎵</text></svg>">
+</head>
+
+<body>
+    <!-- Floating Particles -->
+    <div class="particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <div class="container">
+        <!-- Navigation -->
+        <nav class="nav-bar">
+            <a href="/" class="nav-link" id="navHome">🎵 Generate</a>
+            <a href="/train" class="nav-link" id="navTrain">🧠 Train Model</a>
+            <a href="/history" class="nav-link" id="navHistory">📜 History</a>
+        </nav>
+
+        <!-- Header -->
+        <header class="header">
+            <div class="logo-icon">🎵</div>
+            <h1>CoverComposer</h1>
+            <p class="subtitle">AI-Powered Music Track Generator</p>
+        </header>
+
+        <!-- Result Card -->
+        <div class="card animate-in">
+            <!-- Success Header -->
+            <div class="result-header">
+                <div class="success-icon">✓</div>
+                <h2>Your Track is Ready!</h2>
+                <div class="scale-badge">
+                    🎼 {{ scale_info }}
+                </div>
+            </div>
+
+            <!-- Animated Visualizer -->
+            <div class="visualizer">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+
+            <!-- Track Details Grid -->
+            <div class="track-details animate-in-delay">
+                <div class="detail-item">
+                    <div class="detail-icon">😊</div>
+                    <div class="detail-info">
+                        <span class="detail-label">Mood</span>
+                        <span class="detail-value">{{ mood }}</span>
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-icon">🎸</div>
+                    <div class="detail-info">
+                        <span class="detail-label">Genre</span>
+                        <span class="detail-value">{{ genre }}</span>
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-icon">⏱️</div>
+                    <div class="detail-info">
+                        <span class="detail-label">Tempo</span>
+                        <span class="detail-value">{{ tempo }} BPM</span>
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-icon">🎨</div>
+                    <div class="detail-info">
+                        <span class="detail-label">Style</span>
+                        <span class="detail-value">{{ style }}</span>
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-icon">⏳</div>
+                    <div class="detail-info">
+                        <span class="detail-label">Duration</span>
+                        <span class="detail-value">{{ duration }} ({{ num_notes }} notes)</span>
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-icon">🧠</div>
+                    <div class="detail-info">
+                        <span class="detail-label">AI Model</span>
+                        <span class="detail-value">{{ model_used }}</span>
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-icon">🤖</div>
+                    <div class="detail-info">
+                        <span class="detail-label">AI Engine</span>
+                        <span class="detail-value">{{ ai_engine }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audio Player -->
+            <div class="audio-player-wrapper animate-in-delay">
+                <h3>🎧 Listen to Your Generated Track</h3>
+                <audio controls autoplay id="audioPlayer">
+                    <source src="/static/output/{{ filename }}" type="audio/wav">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons animate-in-delay-2">
+                <a href="/download/{{ filename }}" class="btn btn-download" id="downloadBtn">
+                    <span>⬇️</span> Download WAV
+                </a>
+                <a href="/download/{{ midi_filename }}" class="btn btn-midi-download" id="downloadMidiBtn">
+                    <span>🎹</span> Download MIDI
+                </a>
+                <a href="/" class="btn btn-regenerate" id="regenerateBtn">
+                    <span>🔄</span> New Track
+                </a>
+            </div>
+        </div>
+
+        <!-- Hidden Data for JS -->
+        <div id="markovDataHolder" data-markov='{{ markov_data | tojson | safe }}' style="display:none;"></div>
+
+        <!-- Markov Chain Visualization -->
+        <div class="card animate-in-delay-1" style="margin-top: 30px;">
+            <h2 class="section-title">
+                <span class="icon">🧠</span>
+                Markov Chain Transitions
+            </h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.9rem;">
+                These are the top note transition probabilities used to generate your melody.
+                Each row shows: <strong>From Note → To Note (Probability %)</strong>
+            </p>
+            <div class="markov-grid" id="markovGrid">
+                <!-- Filled by JS from markov_data -->
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer animate-in-delay-2">
+            <p>🎵 CoverComposer — Generative AI Music · Built with FastAPI & Markov Chains</p>
+        </footer>
+    </div>
+
+    <script>
+        // Connect visualizer bars to audio playback
+        const audio = document.getElementById('audioPlayer');
+        const bars = document.querySelectorAll('.visualizer .bar');
+
+        // Create audio context for visualization
+        let audioContext, analyser, source;
+
+        audio.addEventListener('play', function () {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                source = audioContext.createMediaElementSource(audio);
+                source.connect(analyser);
+                analyser.connect(audioContext.destination);
+                analyser.fftSize = 32;
+            }
+
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+            function updateBars() {
+                if (audio.paused) {
+                    bars.forEach(bar => {
+                        bar.style.animation = 'barPulse 1.2s ease-in-out infinite';
+                    });
+                    return;
+                }
+
+                analyser.getByteFrequencyData(dataArray);
+
+                bars.forEach((bar, i) => {
+                    const value = dataArray[i % dataArray.length] || 0;
+                    const height = Math.max(10, (value / 255) * 100);
+                    bar.style.animation = 'none';
+                    bar.style.height = height + '%';
+                    bar.style.transition = 'height 0.05s ease';
+                });
+
+                requestAnimationFrame(updateBars);
+            }
+
+            updateBars();
+        });
+
+        audio.addEventListener('pause', function () {
+            bars.forEach(bar => {
+                bar.style.animation = 'barPulse 1.2s ease-in-out infinite';
+                bar.style.height = '';
+            });
+        });
+
+        // Render Markov Chain Visualization
+        // Render Markov Chain Visualization
+        const markovDataHolder = document.getElementById('markovDataHolder');
+        const markovData = JSON.parse(markovDataHolder.dataset.markov || '[]');
+        const grid = document.getElementById('markovGrid');
+
+        if (markovData && markovData.length > 0) {
+            // Group by source note
+            const grouped = {};
+            markovData.forEach(item => {
+                if (!grouped[item.from]) grouped[item.from] = [];
+                grouped[item.from].push(item);
+            });
+
+            for (const [fromNote, transitions] of Object.entries(grouped)) {
+                const row = document.createElement('div');
+                row.className = 'markov-row';
+
+                const label = document.createElement('div');
+                label.className = 'markov-note';
+                label.textContent = fromNote;
+                row.appendChild(label);
+
+                const arrows = document.createElement('div');
+                arrows.className = 'markov-transitions';
+
+                transitions.forEach(t => {
+                    const item = document.createElement('div');
+                    item.className = 'markov-transition';
+
+                    const barWidth = Math.max(5, t.prob);
+                    item.innerHTML = `
+                        <span class="markov-target">${t.to}</span>
+                        <div class="markov-bar-bg">
+                            <div class="markov-bar-fill" style="width: ${barWidth}%"></div>
+                        </div>
+                        <span class="markov-prob">${t.prob}%</span>
+                    `;
+                    arrows.appendChild(item);
+                });
+
+                row.appendChild(arrows);
+                grid.appendChild(row);
+            }
+        }
+    </script>
+</body>
+
+</html>

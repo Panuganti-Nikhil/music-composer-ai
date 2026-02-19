@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Node / React
+client/node_modules/
+client/dist/
+client/.env
+client/.env.local
+
+# Java / Maven
+backend-api/target/
+backend-api/*.mv.db
+backend-api/*.trace.db
+backend-api/.mvn/wrapper/maven-wrapper.jar
+.mvn/
+
+# App Specific
+static/output/*.wav
+static/output/*.mid
+training_data/
+!training_data/.gitkeep
+musicdb/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Large files (likely)
+*.pdf
+soundfont.sf2

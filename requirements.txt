@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+jinja2
+python-multipart
+pydantic
+aiofiles
+midiutil
+midi2audio
+pyfluidsynth
+mido
+python-rtmidi
+pretty_midi
+pydub
+python-dotenv
+numpy
+scipy

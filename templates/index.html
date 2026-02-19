@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="CoverComposer - AI-Powered Music Track Generator. Create unique instrumental tracks with AI using Markov Chains, customizable by mood, genre, tempo, and style.">
+    <title>CoverComposer | AI Music Generator</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎵</text></svg>">
+</head>
+
+<body>
+    <!-- Floating Particles -->
+    <div class="particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">🎹 Composing your track...</div>
+        <div class="visualizer" style="margin-top: 10px;">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Navigation -->
+        <nav class="nav-bar">
+            <a href="/" class="nav-link active" id="navHome">🎵 Generate</a>
+            <a href="/train" class="nav-link" id="navTrain">🧠 Train Model</a>
+            <a href="/history" class="nav-link" id="navHistory">📜 History</a>
+        </nav>
+
+        <!-- Header -->
+        <header class="header">
+            <div class="logo-icon">🎵</div>
+            <h1>CoverComposer</h1>
+            <p class="subtitle">AI-Powered Music Track Generator — Powered by <span>Markov Chains</span></p>
+        </header>
+
+        <!-- Main Card -->
+        <div class="card animate-in">
+            <h2 class="section-title">
+                <span class="icon">🎛️</span>
+                Create Your Track
+            </h2>
+
+            <form method="POST" action="/" id="generateForm" enctype="multipart/form-data">
+                <div class="form-grid">
+                    <!-- Mood Selection -->
+                    <div class="form-group">
+                        <label for="mood">
+                            <span class="emoji">😊</span> Mood
+                        </label>
+                        <select name="mood" id="mood" required>
+                            <option value="" disabled selected>Select a mood...</option>
+                            <option value="happy">😄 Happy — Major Scale</option>
+                            <option value="sad">😢 Sad — Minor Scale</option>
+                            <option value="calm">😌 Calm — Pentatonic</option>
+                            <option value="energetic">⚡ Energetic — Dorian</option>
+                        </select>
+                    </div>
+
+                    <!-- Genre Selection -->
+                    <div class="form-group">
+                        <label for="genre">
+                            <span class="emoji">🎸</span> Genre
+                        </label>
+                        <select name="genre" id="genre" required>
+                            <option value="" disabled selected>Select a genre...</option>
+                            <option value="pop">🎹 Pop — Piano & Synths</option>
+                            <option value="rock">🎸 Rock — Electric Guitar</option>
+                            <option value="jazz">🎷 Jazz — Piano & Sax</option>
+                            <option value="electronic">🎧 Electronic — Synth Lead</option>
+                        </select>
+                    </div>
+
+                    <!-- Tempo -->
+                    <div class="form-group">
+                        <label for="tempo">
+                            <span class="emoji">⏱️</span> Tempo (BPM)
+                        </label>
+                        <input type="number" name="tempo" id="tempo" min="60" max="200" value="120"
+                            placeholder="60–200 BPM" required>
+                        <span class="tempo-hint">60 = Slow · 120 = Medium · 180 = Fast</span>
+                    </div>
+
+                    <!-- Style -->
+                    <div class="form-group">
+                        <label for="style">
+                            <span class="emoji">🎨</span> Style
+                        </label>
+                        <select name="style" id="style" required>
+                            <option value="" disabled selected>Select a style...</option>
+                            <option value="simple">🔘 Simple — Clean & Steady</option>
+                            <option value="complex">🔴 Complex — Dynamic & Varied</option>
+                        </select>
+                    </div>
+
+                    <!-- Duration (NEW) -->
+                    <div class="form-group">
+                        <label for="duration">
+                            <span class="emoji">⏳</span> Duration
+                        </label>
+                        <select name="duration" id="duration" required>
+                            <option value="short">🎵 Short (~8 sec)</option>
+                            <option value="medium" selected>🎶 Medium (~16 sec)</option>
+                            <option value="long">🎼 Long (~32 sec)</option>
+                            <option value="extra_long">🎹 Extra Long (~48 sec)</option>
+                        </select>
+                    </div>
+
+                    <!-- Trained Model (NEW) -->
+                    <div class="form-group">
+                        <label for="trained_model">
+                            <span class="emoji">🧠</span> AI Model
+                        </label>
+                        <select name="trained_model" id="trained_model">
+                            <option value="none">🔄 Default (Scale-based)</option>
+                            {% if trained_models %}
+                            {% for model in trained_models %}
+                            <option value="{{ model.name }}">🧠 {{ model.name }} ({{ model.trained_on }} files, {{
+                                model.total_notes }} notes)</option>
+                            {% endfor %}
+                            {% endif %}
+                        </select>
+                        <span class="tempo-hint">Train your own model on the <a href="/train"
+                                style="color: var(--accent-primary);">Training page</a></span>
+                    </div>
+
+                    <!-- Gemini AI Toggle -->
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <div style="display: flex; align-items: center; gap: 12px; cursor: pointer;"
+                            onclick="document.getElementById('useAI').click();">
+                            <span class="emoji">✨</span>
+                            <span>Use Gemini AI (Google)</span>
+                            <div style="position: relative; margin-left: auto; width: 52px; height: 28px;"
+                                onclick="event.stopPropagation();">
+                                <input type="checkbox" name="use_ai" id="useAI"
+                                    style="opacity: 0; position: absolute; width: 52px; height: 28px; cursor: pointer; z-index: 10; margin: 0; top: 0; left: 0;"
+                                    onchange="toggleGemini(this)">
+                                <div id="toggleTrack"
+                                    style="width: 52px; height: 28px; background: rgba(255,255,255,0.12); border-radius: 14px; position: absolute; top: 0; left: 0; transition: background 0.3s ease, box-shadow 0.3s ease; border: 1px solid rgba(255,255,255,0.08);">
+                                    <div id="toggleDot"
+                                        style="width: 22px; height: 22px; background: rgba(255,255,255,0.35); border-radius: 50%; position: absolute; top: 3px; left: 3px; transition: transform 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="tempo-hint">Let Gemini AI compose intelligent, musically-aware melodies</span>
+                    </div>
+                </div>
+
+                <!-- Generate Button -->
+                <button type="submit" class="btn-generate" id="generateBtn">
+                    <span class="btn-icon">🎵</span>
+                    Generate Track
+                </button>
+            </form>
+        </div>
+
+        <!-- Decorative Visualizer -->
+        <div class="visualizer animate-in-delay" style="margin-top: 40px;">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer animate-in-delay-2">
+            <p>🎵 CoverComposer — Generative AI Music · Built with FastAPI & Markov Chains</p>
+        </footer>
+    </div>
+
+    <script>
+        // Gemini AI toggle animation
+        function toggleGemini(checkbox) {
+            var track = document.getElementById('toggleTrack');
+            var dot = document.getElementById('toggleDot');
+            if (checkbox.checked) {
+                track.style.background = 'rgba(139, 92, 246, 0.6)';
+                track.style.borderColor = 'rgba(139, 92, 246, 0.4)';
+                track.style.boxShadow = '0 0 16px rgba(139, 92, 246, 0.3)';
+                dot.style.transform = 'translateX(24px)';
+                dot.style.background = '#a78bfa';
+                dot.style.boxShadow = '0 0 10px rgba(139, 92, 246, 0.6)';
+            } else {
+                track.style.background = 'rgba(255,255,255,0.12)';
+                track.style.borderColor = 'rgba(255,255,255,0.08)';
+                track.style.boxShadow = 'none';
+                dot.style.transform = 'translateX(0)';
+                dot.style.background = 'rgba(255,255,255,0.35)';
+                dot.style.boxShadow = 'none';
+            }
+        }
+
+        // Show loading overlay when form is submitted
+        document.getElementById('generateForm').addEventListener('submit', function (e) {
+            const mood = document.getElementById('mood').value;
+            const genre = document.getElementById('genre').value;
+            const style = document.getElementById('style').value;
+
+            if (!mood || !genre || !style) {
+                e.preventDefault();
+                return;
+            }
+
+            document.getElementById('loadingOverlay').classList.add('active');
+        });
+
+        // Add subtle hover effects to form elements
+        document.querySelectorAll('select, input').forEach(el => {
+            el.addEventListener('change', function () {
+                this.style.borderColor = 'rgba(139, 92, 246, 0.5)';
+                setTimeout(() => {
+                    this.style.borderColor = '';
+                }, 500);
+            });
+        });
+    </script>
+</body>
+
+</html>
