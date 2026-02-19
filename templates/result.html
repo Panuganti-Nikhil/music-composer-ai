@@ -39,18 +39,33 @@
         </header>
 
         <!-- Result Card -->
-        <div class="card animate-in">
+        {% set theme_emoji = '☀️' if mood.lower() == 'happy' else ('🌧️' if mood.lower() == 'sad' else ('🍃' if
+        mood.lower() == 'calm' else ('🔥' if mood.lower() == 'energetic' else '🎵'))) %}
+        {% set theme_color = '#f59e0b' if mood.lower() == 'happy' else ('#3b82f6' if mood.lower() == 'sad' else
+        ('#10b981' if mood.lower() == 'calm' else ('#ef4444' if mood.lower() == 'energetic' else '#8b5cf6'))) %}
+        {% set theme_gradient = 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)' if mood.lower() == 'happy' else
+        ('linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)' if mood.lower() == 'sad' else ('linear-gradient(135deg,
+        #10b981 0%, #6ee7b7 100%)' if mood.lower() == 'calm' else ('linear-gradient(135deg, #ef4444 0%, #f97316 100%)'
+        if mood.lower() == 'energetic' else 'var(--gradient-primary)'))) %}
+
+        <div class="card animate-in" style="border-top: 4px solid {{ theme_color }};">
             <!-- Success Header -->
             <div class="result-header">
-                <div class="success-icon">✓</div>
-                <h2>Your Track is Ready!</h2>
-                <div class="scale-badge">
+                <div class="success-icon"
+                    style="background: {{ theme_gradient }}; font-size: 32px; display: flex; align-items: center; justify-content: center;">
+                    {{ theme_emoji }}
+                </div>
+                <h2
+                    style="background: {{ theme_gradient }}; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                    Your {{ mood }} Track is Ready!
+                </h2>
+                <div class="scale-badge" style="border-color: {{ theme_color }}44; color: {{ theme_color }};">
                     🎼 {{ scale_info }}
                 </div>
             </div>
 
             <!-- Animated Visualizer -->
-            <div class="visualizer">
+            <div class="visualizer" style="--bar-color: {{ theme_color }};">
                 <div class="bar"></div>
                 <div class="bar"></div>
                 <div class="bar"></div>
@@ -68,7 +83,7 @@
             <!-- Track Details Grid -->
             <div class="track-details animate-in-delay">
                 <div class="detail-item">
-                    <div class="detail-icon">😊</div>
+                    <div class="detail-icon">🎭</div>
                     <div class="detail-info">
                         <span class="detail-label">Mood</span>
                         <span class="detail-value">{{ mood }}</span>
@@ -78,7 +93,7 @@
                     <div class="detail-icon">🎸</div>
                     <div class="detail-info">
                         <span class="detail-label">Genre</span>
-                        <span class="detail-value">{{ genre }}</span>
+                        <span class="detail-value" style="text-transform: capitalize;">{{ genre }}</span>
                     </div>
                 </div>
                 <div class="detail-item">
@@ -96,10 +111,10 @@
                     </div>
                 </div>
                 <div class="detail-item">
-                    <div class="detail-icon">⏳</div>
+                    <div class="detail-icon">⌛</div>
                     <div class="detail-info">
                         <span class="detail-label">Duration</span>
-                        <span class="detail-value">{{ duration }} ({{ num_notes }} notes)</span>
+                        <span class="detail-value">{{ duration }}</span>
                     </div>
                 </div>
                 <div class="detail-item">
@@ -119,9 +134,9 @@
             </div>
 
             <!-- Audio Player -->
-            <div class="audio-player-wrapper animate-in-delay">
-                <h3>🎧 Listen to Your Generated Track</h3>
-                <audio controls autoplay id="audioPlayer">
+            <div class="audio-player-wrapper animate-in-delay" style="border-color: {{ theme_color }}33;">
+                <h3 style="color: {{ theme_color }};">🎧 Listen to Your Generated Track</h3>
+                <audio controls autoplay id="audioPlayer" style="width: 100%;">
                     <source src="/static/output/{{ filename }}" type="audio/wav">
                     Your browser does not support the audio element.
                 </audio>
@@ -129,11 +144,9 @@
 
             <!-- Action Buttons -->
             <div class="action-buttons animate-in-delay-2">
-                <a href="/download/{{ filename }}" class="btn btn-download" id="downloadBtn">
+                <a href="/download/{{ filename }}" class="btn btn-download" id="downloadBtn"
+                    style="background: {{ theme_gradient }};">
                     <span>⬇️</span> Download WAV
-                </a>
-                <a href="/download/{{ midi_filename }}" class="btn btn-midi-download" id="downloadMidiBtn">
-                    <span>🎹</span> Download MIDI
                 </a>
                 <a href="/" class="btn btn-regenerate" id="regenerateBtn">
                     <span>🔄</span> New Track

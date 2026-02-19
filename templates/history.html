@@ -48,19 +48,25 @@
 
             <div class="history-list">
                 {% for track in tracks %}
+                {% set theme_emoji = '☀️' if track.mood == 'happy' else ('🌧️' if track.mood == 'sad' else ('🍃' if
+                track.mood == 'calm' else ('🔥' if track.mood == 'energetic' else '🎵'))) %}
                 <div class="history-item">
                     <div class="history-info">
                         <div class="history-meta">
-                            <span class="history-mood">{{ track.mood }}</span>
+                            <span style="font-size: 1.2rem; margin-right: 8px;">{{ theme_emoji }}</span>
+                            <span class="history-mood" style="text-transform: capitalize; font-weight: 600;">{{
+                                track.mood }}</span>
                             <span class="history-sep">·</span>
-                            <span class="history-genre">{{ track.genre }}</span>
+                            <span class="history-genre" style="text-transform: capitalize;">{{ track.genre }}</span>
                             <span class="history-sep">·</span>
                             <span class="history-tempo">{{ track.tempo }} BPM</span>
-                            <span class="history-sep">·</span>
-                            <span class="history-style">{{ track.style }}</span>
                         </div>
-                        <div class="history-details">
-                            <span class="tempo-hint">{{ track.created }} · {{ track.size_kb }} KB</span>
+                        <div class="history-details" style="display: flex; align-items: center; gap: 8px;">
+                            <span class="tempo-hint" style="font-size: 0.8rem; opacity: 0.7;">{{ track.created }}</span>
+                            <span class="history-sep">·</span>
+                            <span
+                                style="font-size: 0.75rem; background: rgba(139, 92, 246, 0.15); color: #a78bfa; padding: 2px 8px; border-radius: 100px;">{{
+                                track.ai_engine or 'Markov' }}</span>
                         </div>
                     </div>
                     <div class="history-player">
@@ -73,12 +79,6 @@
                             title="Download WAV">
                             ⬇️ WAV
                         </a>
-                        {% if track.has_midi %}
-                        <a href="/download/{{ track.midi_filename }}" class="btn-mini btn-mini-midi"
-                            title="Download MIDI">
-                            🎹 MIDI
-                        </a>
-                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}

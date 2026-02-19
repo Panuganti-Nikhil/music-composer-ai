@@ -202,49 +202,110 @@
     </div>
 
     <script>
-        // Gemini AI toggle animation
+        // Mood Personality Data
+        const MOOD_THEMES = {
+            happy: {
+                emoji: '☀️',
+                tagline: 'Sunny melodies that make you smile',
+                gradient: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #fde68a 100%)',
+                color: '#f59e0b'
+            },
+            sad: {
+                emoji: '🌧️',
+                tagline: 'Emotional depth, haunting beauty',
+                gradient: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)',
+                color: '#6366f1'
+            },
+            calm: {
+                emoji: '🍃',
+                tagline: 'Zen tranquility, floating serenity',
+                gradient: 'linear-gradient(135deg, #10b981 0%, #34d399 50%, #6ee7b7 100%)',
+                color: '#10b981'
+            },
+            energetic: {
+                emoji: '🔥',
+                tagline: 'Adrenaline-fueled power anthems',
+                gradient: 'linear-gradient(135deg, #ef4444 0%, #f97316 50%, #eab308 100%)',
+                color: '#ef4444'
+            }
+        };
+
+        // Theme switching logic
+        const moodSelect = document.getElementById('mood');
+        const logoIcon = document.querySelector('.logo-icon');
+        const subtitle = document.querySelector('.subtitle');
+        const generateBtn = document.getElementById('generateBtn');
+        const aiModelSelect = document.getElementById('trained_model');
+        const useAICheckbox = document.getElementById('useAI');
+
+        function updateTheme() {
+            const mood = moodSelect.value || 'happy';
+            const theme = MOOD_THEMES[mood];
+
+            // Update UI Colors
+            document.documentElement.style.setProperty('--accent-primary', theme.color);
+            logoIcon.style.background = theme.gradient;
+            logoIcon.textContent = theme.emoji;
+            subtitle.innerHTML = `<span>${theme.tagline}</span> — Customized for your soul`;
+            generateBtn.style.background = theme.gradient;
+
+            // Apply a slight transition effect
+            document.querySelector('.card').style.borderTop = `4px solid ${theme.color}`;
+        }
+
+        moodSelect.addEventListener('change', updateTheme);
+
+        // Gemini AI toggle logic
         function toggleGemini(checkbox) {
             var track = document.getElementById('toggleTrack');
             var dot = document.getElementById('toggleDot');
+            var modelGroup = aiModelSelect.parentElement;
+
             if (checkbox.checked) {
                 track.style.background = 'rgba(139, 92, 246, 0.6)';
                 track.style.borderColor = 'rgba(139, 92, 246, 0.4)';
                 track.style.boxShadow = '0 0 16px rgba(139, 92, 246, 0.3)';
                 dot.style.transform = 'translateX(24px)';
                 dot.style.background = '#a78bfa';
-                dot.style.boxShadow = '0 0 10px rgba(139, 92, 246, 0.6)';
+
+                // Disable Model Selector
+                aiModelSelect.disabled = true;
+                aiModelSelect.style.opacity = '0.3';
+                aiModelSelect.style.cursor = 'not-allowed';
+                modelGroup.querySelector('.tempo-hint').innerHTML = '<span style="color: var(--accent-amber)">⚡ Gemini AI will handle the composition directly</span>';
             } else {
                 track.style.background = 'rgba(255,255,255,0.12)';
                 track.style.borderColor = 'rgba(255,255,255,0.08)';
                 track.style.boxShadow = 'none';
                 dot.style.transform = 'translateX(0)';
                 dot.style.background = 'rgba(255,255,255,0.35)';
-                dot.style.boxShadow = 'none';
+
+                // Enable Model Selector
+                aiModelSelect.disabled = false;
+                aiModelSelect.style.opacity = '1';
+                aiModelSelect.style.cursor = 'pointer';
+                modelGroup.querySelector('.tempo-hint').innerHTML = 'Train your own model on the <a href="/train" style="color: var(--accent-primary);">Training page</a>';
             }
         }
 
         // Show loading overlay when form is submitted
         document.getElementById('generateForm').addEventListener('submit', function (e) {
-            const mood = document.getElementById('mood').value;
+            const mood = moodSelect.value;
             const genre = document.getElementById('genre').value;
             const style = document.getElementById('style').value;
 
             if (!mood || !genre || !style) {
                 e.preventDefault();
+                alert("Please fill in all mood, genre, and style fields.");
                 return;
             }
 
             document.getElementById('loadingOverlay').classList.add('active');
         });
 
-        // Add subtle hover effects to form elements
-        document.querySelectorAll('select, input').forEach(el => {
-            el.addEventListener('change', function () {
-                this.style.borderColor = 'rgba(139, 92, 246, 0.5)';
-                setTimeout(() => {
-                    this.style.borderColor = '';
-                }, 500);
-            });
+        // Initialize theme on load
+        window.addEventListener('load', () => {
+            if (moodSelect.value) updateTheme();
         });
     </script>
 </body>

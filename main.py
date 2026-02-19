@@ -427,6 +427,25 @@ def stylize_notes(melody, style, tempo, **kwargs):
 
     return styled
 
+# ============================================================
+# Smart Model Auto-Selector
+# ============================================================
+def _auto_select_best_model():
+    """
+    Automatically select the best trained model based on the
+    number of notes it was trained on (more data = better music).
+    Returns model name or None.
+    """
+    models = get_available_models()
+    if not models:
+        return None
+    # Pick the model with the most total analyzed notes
+    best = max(models, key=lambda m: m.get("total_notes", 0))
+    if best.get("total_notes", 0) > 0:
+        print(f"🎯 Best model found: {best['name']} ({best['total_notes']} notes analyzed)")
+        return best["name"]
+    return None
+
 
 # ============================================================
 # Generate Notes Based on Mood
@@ -434,8 +453,8 @@ def stylize_notes(melody, style, tempo, **kwargs):
 def generate_notes(mood, style, tempo, duration="medium", trained_model_name=None, use_ai=False):
     """
     Generate melody notes based on mood selection.
-    Maps mood -> scale -> Markov Chain melody -> styled notes.
-    Optionally uses Gemini AI for intelligent composition.
+    - When Gemini AI is ON: Uses AI exclusively, ignoring trained models.
+    - When Gemini AI is OFF: Auto-selects the best trained model for richest output.
     Returns: (styled_notes, engine_used) tuple
     """
     mood_data = MOOD_SCALES.get(mood, MOOD_SCALES["happy"])
@@ -455,25 +474,37 @@ def generate_notes(mood, style, tempo, duration="medium", trained_model_name=Non
     melody = None
     engine_used = "Markov Chain"
 
-    # Try Gemini AI first if enabled
+    # ===== GEMINI AI MODE =====
+    # When AI is ON, trained models are NOT used (Gemini handles everything)
     if use_ai:
-        print("\U0001f680 Attempting Gemini AI melody generation...")
+        print(f"🚀 Gemini AI composing a {mood.upper()} melody...")
         melody = gemini_generate_melody(mood, style, tempo, scale, num_notes)
         if melody:
-            print(f"\u2705 Gemini AI generated {len(melody)} notes!")
+            print(f"✅ Gemini AI generated {len(melody)} notes with {mood} personality!")
             engine_used = "Gemini AI (Google)"
         else:
-            print("\u26a0\ufe0f Gemini AI failed, falling back to Markov Chain")
+            print("⚠️ Gemini AI failed, falling back to Markov Chain")
 
-    # Fallback: Markov Chain
+    # ===== MARKOV CHAIN MODE (with smart model selection) =====
     if melody is None:
         trained_model = None
-        if trained_model_name:
-            trained_model, _ = load_trained_model(trained_model_name)
+
+        # Smart Model Selection: auto-pick the best available model
+        if trained_model_name and trained_model_name != "none":
+            trained_model, model_info = load_trained_model(trained_model_name)
             if trained_model:
-                print(f"\U0001f9e0 Using trained model: {trained_model_name}")
+                print(f"🧠 Using selected model: {trained_model_name}")
+                engine_used = f"Markov Chain + {trained_model_name} model"
+        else:
+            # Auto-pick: find the largest model (most musical knowledge)
+            best_model_name = _auto_select_best_model()
+            if best_model_name:
+                trained_model, model_info = load_trained_model(best_model_name)
+                if trained_model:
+                    print(f"🎯 Auto-selected best model: {best_model_name}")
+                    engine_used = f"Markov Chain + {best_model_name} (auto)"
+
         melody = markov_melody(scale, num_notes, trained_model)
-        engine_used = "Markov Chain"
 
     # Apply style (rhythm & dynamics) with mood-specific rhythm feel
     styled_notes = stylize_notes(melody, style, tempo, rhythm_feel=rhythm_feel)
@@ -487,35 +518,102 @@ def generate_notes(mood, style, tempo, duration="medium", trained_model_name=Non
 def gemini_generate_melody(mood, style, tempo, scale, num_notes):
     """
     Use Google Gemini AI to generate an intelligent melody.
-    The AI understands music theory and generates context-appropriate notes.
+    Each mood has a DEEP PERSONALITY that creates truly unique compositions.
     Returns a list of MIDI note numbers, or None if API fails.
     """
     note_names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
     scale_note_names = [note_names[n % 12] + str(n // 12 - 1) for n in scale]
 
-    prompt = f"""You are a professional music composer AI. Generate a melody as a list of MIDI note numbers.
+    # Deep Mood Personality System
+    mood_personalities = {
+        "happy": {
+            "character": "You are a joyful street musician playing on a sunny day in Paris.",
+            "theory": """
+- Use MAJOR scale intervals exclusively (major 2nds, major 3rds, perfect 5ths)
+- Create UPWARD melodic motion as the dominant direction (70% ascending)
+- Add playful syncopation: short-short-LONG note groupings
+- Use call-and-response patterns (ask a phrase, answer it higher)
+- Include grace notes and ornamental runs between main notes
+- End phrases on the tonic or major 3rd for brightness
+- Tempo feel: Light, bouncy, dance-like
+- Think: Wedding celebration, sunrise, children laughing""",
+            "temperature": 0.9,
+            "avoid": "Avoid minor intervals, descending sequences longer than 3 notes, and chromatic movement."
+        },
+        "sad": {
+            "character": "You are a lonely pianist playing in an empty cathedral at midnight.",
+            "theory": """
+- Use NATURAL MINOR scale with emphasis on minor 3rds and minor 6ths
+- Create predominantly DOWNWARD melodic motion (65% descending)
+- Use LONG sustained notes followed by silence (rest) — breathing pauses
+- Include repeated single notes (like crying, 2-3 repetitions)
+- Create sighing motifs: step down, leap up small, step down further
+- Use the flatted 7th degree for deep melancholy
+- End phrases on the 5th or minor 3rd (unresolved, yearning)
+- Tempo feel: Extremely slow, rubato-like, with sudden pauses
+- Think: Rainy window, farewell, nostalgia, loss""",
+            "temperature": 0.6,
+            "avoid": "Avoid major 3rds, upbeat rhythmic patterns, and bright upper register jumps."
+        },
+        "calm": {
+            "character": "You are a zen monk creating ambient soundscapes in a mountain monastery.",
+            "theory": """
+- Use PENTATONIC scale ONLY — no dissonant intervals at all
+- Create MINIMAL movement between notes (steps of 1-2 scale degrees max)
+- Use WIDE SPACING between phrases — lots of silence and breathing room
+- Repeat motifs gently with tiny variations (like ripples in still water)
+- Keep notes in the MIDDLE register (avoid extreme highs and lows)
+- Use octave unisons for meditative resonance
+- Create a sense of floating — no strong rhythmic pulse
+- End every major phrase on the root note for deep peace
+- Tempo feel: Weightless, suspended, like clouds drifting
+- Think: Meditation, spa, gentle rainfall, deep breathing, nature""",
+            "temperature": 0.5,
+            "avoid": "Avoid large leaps, fast note sequences, rhythmic drive, and chromatic tension."
+        },
+        "energetic": {
+            "character": "You are an EDM producer creating a festival anthem at a massive arena.",
+            "theory": """
+- Use DORIAN or MIXOLYDIAN mode for edgy power
+- Create STRONG, DRIVING rhythmic patterns with repetitive motifs
+- Use OCTAVE JUMPS and power 5ths aggressively
+- Build tension with ascending sequences that climb relentlessly
+- Use rapid repeated notes (machine-gun style) for intensity
+- Create builds: start low, ascend through 2+ octaves
+- Add syncopated off-beat accents for groove
+- Use the b7 for bluesy power
+- End phrases on strong beats with authority (root or 5th)
+- Tempo feel: Pounding, relentless, adrenaline-fueled
+- Think: Racing, fighting, victory, extreme sports, rave""",
+            "temperature": 0.95,
+            "avoid": "Avoid long sustained notes, gentle pentatonic movement, and soft dynamics."
+        }
+    }
 
-Context:
-- Mood: {mood}
-- Style: {style}
+    personality = mood_personalities.get(mood, mood_personalities["happy"])
+
+    prompt = f"""{personality['character']}
+
+Generate a melody as a JSON array of {num_notes} MIDI note numbers.
+
+MUSICAL CONTEXT:
+- Mood: {mood.upper()} — this is the SOUL of the piece
+- Style Complexity: {style}
 - Tempo: {tempo} BPM
-- Available scale notes (MIDI numbers): {scale}
-- Scale note names: {', '.join(scale_note_names)}
-- Number of notes needed: {num_notes}
+- Available notes (MIDI): {scale}
+- Note names: {', '.join(scale_note_names)}
 
-Rules:
-1. Output ONLY a JSON array of integers (MIDI note numbers), nothing else.
-2. Use ONLY notes from the provided scale: {scale}
-3. Create a musically coherent melody that fits the {mood} mood.
-4. For "{mood}" mood:
-   - {'Use bright, uplifting intervals. Prefer stepwise motion with occasional leaps up.' if mood == 'happy' else ''}
-   - {'Use descending motion, minor intervals. Include longer sustained note repetitions.' if mood == 'sad' else ''}
-   - {'Use smooth, flowing motion. Avoid large leaps. Keep it gentle and peaceful.' if mood == 'calm' else ''}
-   - {'Use strong rhythmic patterns, octave jumps, and driving repetitive motifs.' if mood == 'energetic' else ''}
-5. Include musical patterns: repetition, call-and-response, and resolution to the tonic.
-6. The melody should have a clear beginning, development, climax, and resolution.
+MUSIC THEORY DIRECTIVES:
+{personality['theory']}
 
-Output exactly {num_notes} MIDI note numbers as a JSON array. Example format: [67, 69, 71, 72, 74]"""
+STRICT CONSTRAINTS:
+1. Output ONLY a JSON array of integers. No text, no explanation.
+2. Use ONLY notes from: {scale}
+3. {personality['avoid']}
+4. The melody MUST have: intro (4-8 notes), development (middle section), climax (peak), resolution (ending).
+5. {'Use repetitive patterns and motifs for catchiness.' if style == 'simple' else 'Add ornamental variations, countermelodies, and complex intervallic relationships.'}
+
+Output exactly {num_notes} MIDI numbers. Format: [67, 69, 71, ...]"""
 
     try:
         headers = {
@@ -528,7 +626,7 @@ Output exactly {num_notes} MIDI note numbers as a JSON array. Example format: [6
                 }]
             }],
             "generationConfig": {
-                "temperature": 0.8,
+                "temperature": personality.get("temperature", 0.8),
                 "maxOutputTokens": num_notes * 5,
                 "responseMimeType": "application/json"
             }
@@ -1403,12 +1501,13 @@ async def track_history(request: Request):
                     midi_file = OUTPUT_FOLDER / t['filename'].replace('.wav', '.mid')
                     tracks.append({
                         "filename": t['filename'],
-                        "mood": t['mood'].capitalize(),
-                        "genre": t['genre'].capitalize(),
+                        "mood": t['mood'].lower(), # Keep lowercase for template matching
+                        "genre": t['genre'].lower(),
                         "tempo": t['tempo'],
-                        "style": t['style'].capitalize(),
+                        "style": t['style'],
                         "size_kb": t['fileSizeKb'],
                         "created": t['createdAt'].replace('T', ' ').split('.')[0] if t.get('createdAt') else "Recent",
+                        "ai_engine": t.get('aiEngine', 'Markov Chain'),
                         "has_midi": midi_file.exists(),
                         "midi_filename": midi_file.name if midi_file.exists() else None
                     })

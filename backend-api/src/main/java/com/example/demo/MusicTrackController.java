@@ -63,4 +63,15 @@ public class MusicTrackController {
         repository.deleteAll();
         return ResponseEntity.ok(Map.of("success", true));
     }
+
+    @GetMapping("/models")
+    public ResponseEntity<?> getAvailableModels() {
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            Object models = restTemplate.getForObject("http://127.0.0.1:8000/api/models", Object.class);
+            return ResponseEntity.ok(models);
+        } catch (Exception e) {
+            return ResponseEntity.ok(List.of());
+        }
+    }
 }
